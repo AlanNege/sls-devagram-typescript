@@ -1,18 +1,85 @@
 service: sls-devagram-typescript
 frameworkVersion: '3'
 
+custom:
+    userPoolId: 'us-east-1_SYxXpyefV'
+    userPoolClientId: '4bqh72mnpmaig24dggivprgom1'
+
 provider:
   name: aws
   runtime: nodejs14.x
+  stage: ${opt:stage, 'dev'}
+  region: ${opt:region, 'us-east-1'} 
+  environment: 
+    USER_POOL_ID: ${self:custom.userPoolId}
+    USER_POOL_CLIENT_ID: ${self:custom.userPoolClientId}
 
 plugins:
   - serverless-plugin-typescript
 
 functions:
   register:
-    handler: functions/auth.register
-    events: 
+    handler: src/functions/auth.register
+    events:   
       - http:
           path: register
           method: post
           cors: true
+
+resources:
+  Resources:
+    CognitoUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UserPoolName: ${self:service}-${self:provider.stage}-user-pool
+        AdminCreateUserConfig:
+          AllowAdminCreateUserOnly: false
+        UsernameAttributes:
+          - email
+        AutoVerifiedAttributes:
+          - email
+        EmailVerificationMessage: "Seu código de verificação para o cadastro devagram é {####}."
+        EmailVerificationSubject: "Código de verificação Devagram"
+        Policies:
+          PasswordPolicy:
+            MinimumLength: 8
+            RequireLowercase: true
+            RequireNumbers: true
+            RequireSymbols: true
+            RequireUppercase: true          
+    CognitoUserPoolClient:  
+      Type: AWS::Cognito::UserPoolClient
+      Properties: 
+        ClientName: ${self:service}-${self:provider.stage}-user-pool-client
+        UserPoolId: !Ref CognitoUserPool
+        AllowedOAuthFlows:
+          - implicit
+        AllowedOAuthFlowsUserPoolClient: true
+        AllowedOAuthScopes:
+          - email
+          - openid
+        CallbackURLs:
+          - https://www.google.com
+        LogoutURLs:
+          - https://www.google.com
+        ExplicitAuthFlows:
+          - ALLOW_CUSTOM_AUTH
+          - ALLOW_USER_SRP_AUTH
+          - ALLOW_REFRESH_TOKEN_AUTH
+        SupportedIdentityProviders:
+          - COGNITO 
+        ReadAttributes:
+          - email
+        WriteAttributes:
+          - email
+    CognitoUserPoolDomain: 
+      Type: AWS::Cognito::UserPoolDomain
+      Properties: 
+        UserPoolId: !Ref CognitoUserPool  
+        Domain: ${self:service}-${self:provider.stage}-user-pool-domain-alan-nege-20221125         
+
+
+ 
+
+          
+  
