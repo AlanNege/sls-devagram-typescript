@@ -1,8 +1,8 @@
-import type {DefaultResponseMessage} from "../types/DefaultResponseMessage"; 
+import type {DefaultResponseMessage} from "../types/auth/DefaultResponseMessage"; 
 
 export type DefaultJsonResponse = {
     statusCode: number,
-    header: object,
+    headers: object,
     body: string
 }
 
@@ -12,14 +12,14 @@ export const formatDefaultResponse = (statusCode: number,
 
     const defaultMessage: DefaultResponseMessage = {};
 
-    if(message && (statusCode >=200 || statusCode <= 390)){
+    if(message && statusCode >=200 && statusCode <= 390){
         defaultMessage.msg = message;        
     }else if (message){
         defaultMessage.error = message;
     }
 
     return{
-        header : {
+        headers : {
             "content-type" : "application/json"
         },
         statusCode,

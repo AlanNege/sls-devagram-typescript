@@ -3,10 +3,12 @@ import { DefaultJsonResponse, formatDefaultResponse } from '../utils/formatRespo
 import {UserRegisterRequest} from '../types/auth/UserRegisterRequest';
 import {emailRegex, passwordRegex} from '../constants/Regexes';
 import {CognitoServices} from '../services/CognitoServices';
+import { ConfirmEmailRequest } from '../types/auth/ConfirmEmailRequest';
 
 export const register : Handler = async(event: APIGatewayEvent) 
     : Promise<DefaultJsonResponse> => {
     try{
+        console.log('Chegou cadastro')
         const {USER_POOL_ID, USER_POOL_CLIENT_ID} = process.env;
         if(!USER_POOL_ID || !USER_POOL_CLIENT_ID){
             return formatDefaultResponse(500,'ENVs do cognito nao encontradas');
@@ -41,4 +43,39 @@ export const register : Handler = async(event: APIGatewayEvent)
         console.log('Error on register user:', error);
         return formatDefaultResponse(500,'Erro ao cadastrar usuario. Tente novamente ou entre em contato com o administrador do sistema.');
     }
+}
+
+export const confirmEmail : Handler = async (event: APIGatewayEvent) : 
+    Promise<DefaultJsonResponse> =>{
+    try{
+        const {USER_POOL_ID, USER_POOL_CLIENT_ID} = process.env;
+        if(!USER_POOL_ID || !USER_POOL_CLIENT_ID){
+            return formatDefaultResponse(500,'ENVs do cognito nao encontradas');
+   
+        }
+
+        if(!event.body){
+            return formatDefaultResponse(400,'Parâmetros de entrada invalidos');
+        }
+
+        const request = JSON.parse(event.body) as ConfirmEmailRequest;
+        const {email, verificationCode} = request;
+
+        if(!email || !email.match(emailRegex)){
+            return formatDefaultResponse(400,'Email invalido');
+
+        }
+
+        if(!verificationCode || verificationCode.length !==6){
+            return formatDefaultResponse(400,'Código invalido');
+        }
+            
+        await new CognitoServices(USER_POOL_ID, USER_POOL_CLIENT_ID).confirmEmail(email, verificationCode)
+        return formatDefaultResponse(200, 'Usuario verificado com sucesso!');
+    }catch(error){
+        console.log('Error on confirm user:', error);
+        return formatDefaultResponse(500,'Erro ao confirmar usuario. Tente novamente ou entre em contato com o administrador do sistema.');    
+    }
+    
+
 }
