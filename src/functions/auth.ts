@@ -4,14 +4,22 @@ import {UserRegisterRequest} from '../types/auth/UserRegisterRequest';
 import {emailRegex, passwordRegex} from '../constants/Regexes';
 import {CognitoServices} from '../services/CognitoServices';
 import { ConfirmEmailRequest } from '../types/auth/ConfirmEmailRequest';
+import { User } from '../types/models/user';
+import { UserModel } from '../models/UserModel';
+
 
 export const register : Handler = async(event: APIGatewayEvent) 
     : Promise<DefaultJsonResponse> => {
     try{
         console.log('Chegou cadastro')
-        const {USER_POOL_ID, USER_POOL_CLIENT_ID} = process.env;
+        const {USER_POOL_ID, USER_POOL_CLIENT_ID,USER_TABLE} = process.env;
         if(!USER_POOL_ID || !USER_POOL_CLIENT_ID){
             return formatDefaultResponse(500,'ENVs do cognito nao encontradas');
+   
+        }
+
+        if(!USER_TABLE){
+            return formatDefaultResponse(500,'ENVs da tabela de usuário do dynamo nao encontrada');
    
         }
 
@@ -36,7 +44,15 @@ export const register : Handler = async(event: APIGatewayEvent)
             return formatDefaultResponse(400,'Nome valido');
         }
         
-        await new CognitoServices(USER_POOL_ID, USER_POOL_CLIENT_ID).signUp(email, password);
+        const cognitoUser = await new CognitoServices(USER_POOL_ID, USER_POOL_CLIENT_ID).signUp(email, password);
+        
+        const user = {
+            name,
+            email,
+            cognitoId: cognitoUser.userSub
+        } as User; 
+
+        await UserModel.create(user);
         return formatDefaultResponse(200,'Usuário cadastrado com sucesso');
 
     }catch(error){

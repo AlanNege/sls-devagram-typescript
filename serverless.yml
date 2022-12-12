@@ -18,7 +18,7 @@ provider:
   iam:
     role: 
       statements:
-        - Effects: Allow
+        - Effect: Allow
           Action:
             - dynamodb:*
           Resource:
