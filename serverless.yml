@@ -4,7 +4,10 @@ frameworkVersion: '3'
 custom:
     userPoolId: 'us-east-1_SYxXpyefV'  
     userPoolClientId: '4bqh72mnpmaig24dggivprgom1'
-    userTableName: 'users-table-${self:provider.stage}' 
+    userTableName: 'users-table-${self:provider.stage}'
+    apigwBinary:
+      types:
+        - 'multipart/form-data' 
 
 provider:
   name: aws
@@ -26,6 +29,7 @@ provider:
 
 plugins:
   - serverless-plugin-typescript
+  - serverless-apigw-binary
 
 functions:
   register:

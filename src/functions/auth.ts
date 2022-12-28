@@ -6,6 +6,7 @@ import {CognitoServices} from '../services/CognitoServices';
 import { ConfirmEmailRequest } from '../types/auth/ConfirmEmailRequest';
 import { User } from '../types/models/user';
 import { UserModel } from '../models/UserModel';
+import {parse} from 'aws-multipart-parser';
 
 
 export const register : Handler = async(event: APIGatewayEvent) 
@@ -27,32 +28,32 @@ export const register : Handler = async(event: APIGatewayEvent)
             return formatDefaultResponse(400,'Parametros de entrada invalidos');
         }
 
-        const request = JSON.parse(event.body) as UserRegisterRequest;
-        const {name, password,email} = request;
+        const formData = parse(event, true);
+        console.log('formData', formData);    
 
-        if(!email || !email.match(emailRegex)){
-            return formatDefaultResponse(400,'Email valido');
+        //if(!email || !email.match(emailRegex)){
+        //    return formatDefaultResponse(400,'Email valido');
 
-        }
+        //}
 
-        if(!password || !password.match(passwordRegex)){
-            return formatDefaultResponse(400,'Senha invalida');
+        //if(!password || !password.match(passwordRegex)){
+        //    return formatDefaultResponse(400,'Senha invalida');
 
-        }
+        //}
 
-        if(!name || name.trim().length <2 ){
-            return formatDefaultResponse(400,'Nome valido');
-        }
+        //if(!name || name.trim().length <2 ){
+        //    return formatDefaultResponse(400,'Nome valido');
+        //}
         
-        const cognitoUser = await new CognitoServices(USER_POOL_ID, USER_POOL_CLIENT_ID).signUp(email, password);
+        //const cognitoUser = await new CognitoServices(USER_POOL_ID, USER_POOL_CLIENT_ID).signUp(email, password);
         
-        const user = {
-            name,
-            email,
-            cognitoId: cognitoUser.userSub
-        } as User; 
+        //const user = {
+        //    name,
+        //    email,
+        //    cognitoId: cognitoUser.userSub
+        //} as User; 
 
-        await UserModel.create(user);
+        //await UserModel.create(user);
         return formatDefaultResponse(200,'Usuário cadastrado com sucesso');
 
     }catch(error){
