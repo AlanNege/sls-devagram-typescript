@@ -39,6 +39,7 @@ export class CognitoServices {
      public confirmEmail = (email:string, verificationCode: string) : Promise<any> =>{
           return new Promise((resolve, reject) =>{ 
                try{
+                    
                     const userPool = new CognitoUserPool(this.poolData);
 
                     const userData = {
@@ -50,13 +51,16 @@ export class CognitoServices {
 
                     user.confirmRegistration(verificationCode,true, (err, result) =>{
                          if(err){
+                              
                               return reject(err);
+                              
                          }
-
+                         
                          resolve(result);
                     });  
                }catch(error){
-                    reject(error);
+                    console.log('Erro no lambda')
+                    reject(error);                    
                }
              
           })          
