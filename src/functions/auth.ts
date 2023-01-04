@@ -1,19 +1,21 @@
 import type {Handler, APIGatewayEvent} from 'aws-lambda';
 import { DefaultJsonResponse, formatDefaultResponse } from '../utils/formatResponseUtil';
 import {UserRegisterRequest} from '../types/auth/UserRegisterRequest';
-import {emailRegex, passwordRegex} from '../constants/Regexes';
+import {emailRegex, imageExtensionsAllowed, passwordRegex} from '../constants/Regexes';
 import {CognitoServices} from '../services/CognitoServices';
 import { ConfirmEmailRequest } from '../types/auth/ConfirmEmailRequest';
 import { User } from '../types/models/user';
 import { UserModel } from '../models/UserModel';
 import {parse} from 'aws-multipart-parser';
+import { FileData } from 'aws-multipart-parser/dist/models';
+import { S3Service } from '../services/S3Services';
 
 
 export const register : Handler = async(event: APIGatewayEvent) 
     : Promise<DefaultJsonResponse> => {
     try{
         console.log('Chegou cadastro')
-        const {USER_POOL_ID, USER_POOL_CLIENT_ID,USER_TABLE} = process.env;
+        const {USER_POOL_ID, USER_POOL_CLIENT_ID,USER_TABLE,AVATAR_BUCKET} = process.env;
         if(!USER_POOL_ID || !USER_POOL_CLIENT_ID){
             return formatDefaultResponse(500,'ENVs do cognito nao encontradas');
    
@@ -21,39 +23,52 @@ export const register : Handler = async(event: APIGatewayEvent)
 
         if(!USER_TABLE){
             return formatDefaultResponse(500,'ENVs da tabela de usuário do dynamo nao encontrada');
-   
+        }
+
+        if(!AVATAR_BUCKET){
+            return formatDefaultResponse(500,'ENVs do bucket de avatar nao encontrada');
         }
 
         if(!event.body){
             return formatDefaultResponse(400,'Parametros de entrada invalidos');
         }
 
-        const formData = parse(event, true);
-        console.log('formData', formData);    
+        const formData = parse(event, true);     
+        const file = formData.file as FileData;
+        const name = formData.name as string;
+        const email = formData.email as string;
+        const password = formData.password as string;
 
-        //if(!email || !email.match(emailRegex)){
-        //    return formatDefaultResponse(400,'Email valido');
+        if(!email || !email.match(emailRegex)){
+           return formatDefaultResponse(400,'Email valido');
+        }
 
-        //}
+        if(!password || !password.match(passwordRegex)){
+           return formatDefaultResponse(400,'Senha invalida');
+        }
 
-        //if(!password || !password.match(passwordRegex)){
-        //    return formatDefaultResponse(400,'Senha invalida');
-
-        //}
-
-        //if(!name || name.trim().length <2 ){
-        //    return formatDefaultResponse(400,'Nome valido');
-        //}
+        if(!name || name.trim().length <2 ){
+            return formatDefaultResponse(400,'Nome valido');
+        }
         
-        //const cognitoUser = await new CognitoServices(USER_POOL_ID, USER_POOL_CLIENT_ID).signUp(email, password);
+        if(file && !imageExtensionsAllowed.exec(file.filename)){
+            return formatDefaultResponse(400,'Extensao informado do arquivo nao e valida');
+        }
+        const cognitoUser = await new CognitoServices(USER_POOL_ID, USER_POOL_CLIENT_ID).signUp(email, password);
         
-        //const user = {
-        //    name,
-        //    email,
-        //    cognitoId: cognitoUser.userSub
-        //} as User; 
+        let key = undefined;
+        if(file){
+            key = await new S3Service().saveImage(AVATAR_BUCKET,'avatar', file); 
+        }
 
-        //await UserModel.create(user);
+        const user = {
+            name,
+            email,
+           cognitoId: cognitoUser.userSub,
+           avatar: key
+        } as User; 
+
+        await UserModel.create(user);
         return formatDefaultResponse(200,'Usuário cadastrado com sucesso');
 
     }catch(error){
@@ -68,7 +83,6 @@ export const confirmEmail : Handler = async (event: APIGatewayEvent) :
         const {USER_POOL_ID, USER_POOL_CLIENT_ID} = process.env;
         if(!USER_POOL_ID || !USER_POOL_CLIENT_ID){
             return formatDefaultResponse(500,'ENVs do cognito nao encontradas');
-   
         }
 
         if(!event.body){
@@ -80,7 +94,6 @@ export const confirmEmail : Handler = async (event: APIGatewayEvent) :
 
         if(!email || !email.match(emailRegex)){
             return formatDefaultResponse(400,'Email invalido');
-
         }
 
         if(!verificationCode || verificationCode.length !==6){
