@@ -2,8 +2,8 @@ service: sls-devagram-typescript
 frameworkVersion: '3'
 
 custom:
-    userPoolId: 'us-east-1_SYxXpyefV'  
-    userPoolClientId: '4bqh72mnpmaig24dggivprgom1'
+    userPoolId: 'us-east-1_SYxXpyefV' 
+    userPoolClientId:  '4bqh72mnpmaig24dggivprgom1'
     userTableName: 'users-table-${self:provider.stage}'
     avatarBucket: '${self:service}-${self:provider.stage}-avattars'
     apigwBinary:
@@ -29,6 +29,21 @@ provider:
           Resource:
             - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.userTableName}"
 
+  httpApi:
+    authorizers:
+      serviceAuthorizer:
+        identitySource: $request.header.Authorization
+        issuerUrl:
+          Fn::Join:
+          - ''
+          -
+            - 'https://cognito-idp.'
+            - '${self:provider.region}'
+            - '.amazonaws.com/'
+            - Ref: CognitoUserPool
+        audience:
+          - Ref: CognitoUserPoolClient
+
 plugins:
   - serverless-plugin-typescript
   - serverless-apigw-binary
@@ -36,39 +51,47 @@ plugins:
 functions:
   register:
     handler: src/functions/auth.register
-    events:   
+    events:
       - http:
           path: register
           method: post
           cors: true
-  confirmEmail: 
+  confirmEmail:
     handler: src/functions/auth.confirmEmail
-    events: 
+    events:
       - http:
           path: confirmEmail
           method: post
           cors: true
-  forgotPassword: 
+  forgotPassword:
     handler: src/functions/auth.forgotPassword
-    events: 
+    events:
       - http:
           path: forgotPassword
           method: post
           cors: true
-  changePassword: 
+  changePassword:
     handler: src/functions/auth.changePassword
-    events: 
+    events:
       - http:
           path: changePassword
           method: post
           cors: true
-  login: 
+  login:
     handler: src/functions/login.handler
-    events: 
+    events:
       - http:
           path: login
           method: post
-          cors: true 
+          cors: true    
+  me:
+    handler: src/functions/user.me
+    events:
+      - httpApi:
+          path: /me
+          method: get
+          authorizer: serviceAuthorizer
+      
                  
 resources:
   Resources:
