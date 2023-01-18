@@ -10,22 +10,15 @@ import {parse} from 'aws-multipart-parser';
 import { FileData } from 'aws-multipart-parser/dist/models';
 import { S3Service } from '../services/S3Services';
 import { ChangePasswordRequest } from '../types/auth/ChangePasswordRequest';
+import {validateEnvs} from '../utils/environmentsUtils';
 
 export const register : Handler = async(event: APIGatewayEvent) 
     : Promise<DefaultJsonResponse> => {
     try{
-        console.log('Chegou cadastro')
-        const {USER_POOL_ID, USER_POOL_CLIENT_ID,USER_TABLE,AVATAR_BUCKET} = process.env;
-        if(!USER_POOL_ID || !USER_POOL_CLIENT_ID){
-            return formatDefaultResponse(500,'ENVs do cognito nao encontradas');   
-        }
-
-        if(!USER_TABLE){
-            return formatDefaultResponse(500,'ENVs da tabela de usuário do dynamo nao encontrada');
-        }
-
-        if(!AVATAR_BUCKET){
-            return formatDefaultResponse(500,'ENVs do bucket de avatar nao encontrada');
+        const {USER_POOL_ID, USER_POOL_CLIENT_ID, AVATAR_BUCKET, error} = validateEnvs(['USER_POOL_ID',
+            'USER_POOL_CLIENT_ID','USER_TABLE','AVATAR_BUCKET']);
+        if(error){
+            return formatDefaultResponse(500, error);   
         }
 
         if(!event.body){
@@ -79,9 +72,10 @@ export const register : Handler = async(event: APIGatewayEvent)
 export const confirmEmail : Handler = async (event: APIGatewayEvent) : 
     Promise<DefaultJsonResponse> =>{
     try{
-        const {USER_POOL_ID, USER_POOL_CLIENT_ID} = process.env;
-        if(!USER_POOL_ID || !USER_POOL_CLIENT_ID){
-            return formatDefaultResponse(500,'ENVs do cognito nao encontradas');
+        const {USER_POOL_ID, USER_POOL_CLIENT_ID,error} = validateEnvs(['USER_POOL_ID',
+            'USER_POOL_CLIENT_ID']);
+        if(error){
+            return formatDefaultResponse(500, error);   
         }
 
         if(!event.body){
@@ -110,9 +104,10 @@ export const confirmEmail : Handler = async (event: APIGatewayEvent) :
 export const forgotPassword : Handler = async (event: APIGatewayEvent) : 
     Promise<DefaultJsonResponse> =>{
     try{
-        const {USER_POOL_ID, USER_POOL_CLIENT_ID} = process.env;
-        if(!USER_POOL_ID || !USER_POOL_CLIENT_ID){
-            return formatDefaultResponse(500,'ENVs do cognito nao encontradas');
+        const {USER_POOL_ID, USER_POOL_CLIENT_ID, error} = validateEnvs(['USER_POOL_ID',
+            'USER_POOL_CLIENT_ID']);
+        if(error){
+            return formatDefaultResponse(500, error);   
         }
 
         if(!event.body){
@@ -137,9 +132,10 @@ export const forgotPassword : Handler = async (event: APIGatewayEvent) :
 export const changePassword : Handler = async (event: APIGatewayEvent) : 
     Promise<DefaultJsonResponse> =>{
     try{
-        const {USER_POOL_ID, USER_POOL_CLIENT_ID} = process.env;
-        if(!USER_POOL_ID || !USER_POOL_CLIENT_ID){
-            return formatDefaultResponse(500,'ENVs do cognito nao encontradas');
+        const {USER_POOL_ID, USER_POOL_CLIENT_ID,error} = validateEnvs(['USER_POOL_ID',
+            'USER_POOL_CLIENT_ID','USER_TABLE']);
+        if(error){
+            return formatDefaultResponse(500, error);   
         }
 
         if(!event.body){
